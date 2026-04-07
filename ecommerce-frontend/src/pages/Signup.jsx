@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import axios from 'axios'
 import { secureStorage } from '../utils/storage'
 
@@ -11,6 +12,34 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/google`, {
+        credential: credentialResponse.credential
+      })
+
+      secureStorage.setToken(response.data.token)
+      secureStorage.setUser({ id: response.data.user.id, email: response.data.user.email, role: response.data.user.role })
+      secureStorage.setUserRole(response.data.user.role)
+
+      navigate('/')
+    } catch (error) {
+      setErrors({ submit: error.response?.data?.error || 'Google sign-in failed' })
+    }
+  }
+
+  const handleGoogleError = () => {
+    setErrors({ submit: 'Google sign-in failed. Please try again.' })
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -151,6 +180,29 @@ export default function Signup() {
               ) : 'Create Account'}
             </button>
           </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500 font-medium">Or continue with</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="outline"
+                size="large"
+                text="signup_with"
+                shape="rectangular"
+              />
+            </div>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">
