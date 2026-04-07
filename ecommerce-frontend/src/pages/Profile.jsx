@@ -60,7 +60,7 @@ export default function Profile() {
 
   const fetchOrders = async (token) => {
     try {
-      const response = await axios.get('http://localhost:5000/api/orders/my-orders', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setOrders(response.data.data || [])

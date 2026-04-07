@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { secureStorage } from '../utils/storage'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL
 
 export default function ProductDetail() {
   const { id } = useParams()
@@ -48,7 +48,7 @@ export default function ProductDetail() {
     try {
       // Send to backend API
       const response = await axios.post(
-        'http://localhost:5000/api/cart/add-item',
+        `${API_URL}/cart/add-item`,
         {
           productId: product.id || product._id,
           quantity,

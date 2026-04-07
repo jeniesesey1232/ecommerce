@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { secureStorage } from '../utils/storage'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 export default function Cart() {
   const [cart, setCart] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,7 +22,7 @@ export default function Cart() {
         return
       }
 
-      const response = await axios.get('http://localhost:5000/api/cart/my-cart', {
+      const response = await axios.get(`${API_URL}/cart/my-cart`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       setCart(response.data.data || [])
@@ -40,7 +42,7 @@ export default function Cart() {
     try {
       const token = secureStorage.getToken()
       const response = await axios.put(
-        `http://localhost:5000/api/cart/update-item/${productId}`,
+        `${API_URL}/cart/update-item/${productId}`,
         { quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -54,7 +56,7 @@ export default function Cart() {
     try {
       const token = secureStorage.getToken()
       const response = await axios.delete(
-        `http://localhost:5000/api/cart/remove-item/${productId}`,
+        `${API_URL}/cart/remove-item/${productId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setCart(response.data.data || [])

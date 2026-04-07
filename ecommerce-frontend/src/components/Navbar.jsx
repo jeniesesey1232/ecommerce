@@ -24,7 +24,7 @@ export default function Navbar() {
         return
       }
 
-      const response = await axios.get('http://localhost:5000/api/cart/my-cart', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/cart/my-cart`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const cart = response.data.data || []

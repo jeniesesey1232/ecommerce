@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { secureStorage } from '../utils/storage'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 function AdminDashboard() {
   const navigate = useNavigate()
   const [stats, setStats] = useState({ totalOrders: 0, totalRevenue: 0, totalProducts: 0 })
@@ -42,9 +44,9 @@ function AdminDashboard() {
       const config = { headers: { Authorization: `Bearer ${token}` } }
 
       const [statsRes, productsRes, ordersRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/stats', config),
-        axios.get('http://localhost:5000/api/products'),
-        axios.get('http://localhost:5000/api/admin/orders', config)
+        axios.get(`${API_URL}/admin/stats`, config),
+        axios.get(`${API_URL}/products`),
+        axios.get(`${API_URL}/admin/orders`, config)
       ])
 
       setStats(statsRes.data.data || statsRes.data)
@@ -68,7 +70,7 @@ function AdminDashboard() {
       
       const product = products.find(p => p.id === productId)
       await axios.put(
-        `http://localhost:5000/api/admin/products/${productId}`,
+        `${API_URL}/admin/products/${productId}`,
         { ...product, stock: parseInt(newStock) },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -88,7 +90,7 @@ function AdminDashboard() {
     try {
       const token = secureStorage.getToken()
       await axios.post(
-        'http://localhost:5000/api/admin/products',
+        `${API_URL}/admin/products`,
         newProduct,
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -107,7 +109,7 @@ function AdminDashboard() {
     try {
       const token = secureStorage.getToken()
       await axios.put(
-        `http://localhost:5000/api/admin/products/${editingProduct.id}`,
+        `${API_URL}/admin/products/${editingProduct.id}`,
         editingProduct,
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -130,7 +132,7 @@ function AdminDashboard() {
         try {
           const token = secureStorage.getToken()
           await axios.delete(
-            `http://localhost:5000/api/admin/products/${productId}`,
+            `${API_URL}/admin/products/${productId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           )
           setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, type: 'delete' })
@@ -474,7 +476,7 @@ function AdminDashboard() {
                               try {
                                 const token = secureStorage.getToken()
                                 await axios.put(
-                                  `http://localhost:5000/api/orders/${order._id || order.id}/status`,
+                                  `${API_URL}/orders/${order._id || order.id}/status`,
                                   { status: e.target.value },
                                   { headers: { Authorization: `Bearer ${token}` } }
                                 )

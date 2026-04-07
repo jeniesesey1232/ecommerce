@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-
-console.log('API_URL:', API_URL)
+const API_URL = import.meta.env.VITE_API_URL
 
 export default function Home() {
   const [products, setProducts] = useState([])
