@@ -19,17 +19,33 @@ router.post('/products', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { name, description, price, category, image, stock } = req.body
 
-    if (!name || !description || !price || !category || !image) {
-      return res.status(400).json({ error: 'All fields required' })
+    // Validate inputs
+    if (!name || name.trim().length < 3 || name.length > 100) {
+      return res.status(400).json({ error: 'Name must be 3-100 characters' })
+    }
+    if (!description || description.trim().length < 10 || description.length > 500) {
+      return res.status(400).json({ error: 'Description must be 10-500 characters' })
+    }
+    if (!price || isNaN(price) || price <= 0 || price > 999999) {
+      return res.status(400).json({ error: 'Invalid price (0.01-999999)' })
+    }
+    if (!category || !['Electronics', 'Clothing', 'Home', 'Sports', 'Books'].includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' })
+    }
+    if (!image || !image.startsWith('http')) {
+      return res.status(400).json({ error: 'Invalid image URL' })
+    }
+    if (stock === undefined || isNaN(stock) || stock < 0 || stock > 9999) {
+      return res.status(400).json({ error: 'Invalid stock (0-9999)' })
     }
 
     const product = new Product({
-      name,
-      description,
+      name: name.trim(),
+      description: description.trim(),
       price: parseFloat(price),
       category,
       image,
-      stock: parseInt(stock) || 0
+      stock: parseInt(stock)
     })
 
     await product.save()
@@ -44,9 +60,37 @@ router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) =>
   try {
     const { name, description, price, category, image, stock } = req.body
 
+    // Validate inputs
+    if (name && (name.trim().length < 3 || name.length > 100)) {
+      return res.status(400).json({ error: 'Name must be 3-100 characters' })
+    }
+    if (description && (description.trim().length < 10 || description.length > 500)) {
+      return res.status(400).json({ error: 'Description must be 10-500 characters' })
+    }
+    if (price && (isNaN(price) || price <= 0 || price > 999999)) {
+      return res.status(400).json({ error: 'Invalid price (0.01-999999)' })
+    }
+    if (category && !['Electronics', 'Clothing', 'Home', 'Sports', 'Books'].includes(category)) {
+      return res.status(400).json({ error: 'Invalid category' })
+    }
+    if (image && !image.startsWith('http')) {
+      return res.status(400).json({ error: 'Invalid image URL' })
+    }
+    if (stock !== undefined && (isNaN(stock) || stock < 0 || stock > 9999)) {
+      return res.status(400).json({ error: 'Invalid stock (0-9999)' })
+    }
+
+    const updateData = {}
+    if (name) updateData.name = name.trim()
+    if (description) updateData.description = description.trim()
+    if (price) updateData.price = parseFloat(price)
+    if (category) updateData.category = category
+    if (image) updateData.image = image
+    if (stock !== undefined) updateData.stock = parseInt(stock)
+
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      { name, description, price, category, image, stock },
+      updateData,
       { new: true }
     )
 

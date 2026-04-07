@@ -1,5 +1,6 @@
 import express from 'express'
 import { authMiddleware } from '../middleware/auth.js'
+import { Product } from '../db.js'
 import mongoose from 'mongoose'
 
 const router = express.Router()
@@ -33,7 +34,22 @@ router.post('/add-item', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId || req.user.id
     const userIdStr = userId.toString()
-    const { productId, quantity, price, name, image } = req.body
+    const { productId, quantity } = req.body
+
+    // Validate quantity
+    if (!quantity || quantity < 1 || quantity > 99) {
+      return res.status(400).json({ error: 'Invalid quantity (1-99)' })
+    }
+
+    // Get product from database to ensure correct price
+    const product = await Product.findById(productId)
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+
+    if (product.stock < quantity) {
+      return res.status(400).json({ error: 'Insufficient stock' })
+    }
 
     const db = getDB()
     const cartsCollection = db.collection('carts')
@@ -49,15 +65,29 @@ router.post('/add-item', authMiddleware, async (req, res) => {
 
     if (existingItem) {
       // Update quantity
+      const newQuantity = existingItem.quantity + quantity
+      if (newQuantity > 99) {
+        return res.status(400).json({ error: 'Maximum quantity is 99' })
+      }
       await cartsCollection.updateOne(
         { userId: userIdStr, 'items.productId': productId },
         { $inc: { 'items.$.quantity': quantity } }
       )
     } else {
-      // Add new item
+      // Add new item with price from database
       await cartsCollection.updateOne(
         { userId: userIdStr },
-        { $push: { items: { productId, quantity, price, name, image } } }
+        { 
+          $push: { 
+            items: { 
+              productId, 
+              quantity, 
+              price: product.price, // Use DB price
+              name: product.name, 
+              image: product.image 
+            } 
+          } 
+        }
       )
     }
 
@@ -99,6 +129,11 @@ router.put('/update-item/:productId', authMiddleware, async (req, res) => {
     const userIdStr = userId.toString()
     const productId = req.params.productId
     const { quantity } = req.body
+
+    // Validate quantity
+    if (!quantity || quantity < 0 || quantity > 99) {
+      return res.status(400).json({ error: 'Invalid quantity (0-99)' })
+    }
 
     const db = getDB()
     const cartsCollection = db.collection('carts')
