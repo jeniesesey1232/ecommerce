@@ -1,7 +1,7 @@
 import express from 'express'
-import validator from 'validator'
+import mongoose from 'mongoose'
 import mongoSanitize from 'express-mongo-sanitize'
-import { Order, Cart, Product } from '../db.js'
+import { Order, Product } from '../db.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()

@@ -60,7 +60,7 @@ export default function Login() {
     try {
       setLoading(true)
       const response = await axios.post(`${API_URL}/auth/google`, {
-        token: credentialResponse.credential
+        credential: credentialResponse.credential
       })
 
       secureStorage.setToken(response.data.token)
