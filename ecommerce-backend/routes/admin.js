@@ -2,6 +2,7 @@ import express from 'express'
 import mongoose from 'mongoose'
 import { Product, Order, User } from '../db.js'
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
+import { validateRequest, schemas } from '../middleware/validation.js'
 
 const router = express.Router()
 
@@ -19,29 +20,9 @@ router.get('/products', authMiddleware, adminMiddleware, async (req, res) => {
 })
 
 // Create product
-router.post('/products', authMiddleware, adminMiddleware, async (req, res) => {
+router.post('/products', authMiddleware, adminMiddleware, validateRequest(schemas.createProduct), async (req, res) => {
   try {
     const { name, description, price, category, image, stock } = req.body
-
-    // Validate inputs
-    if (!name || name.trim().length < 3 || name.length > 100) {
-      return res.status(400).json({ error: 'Name must be 3-100 characters' })
-    }
-    if (!description || description.trim().length < 10 || description.length > 500) {
-      return res.status(400).json({ error: 'Description must be 10-500 characters' })
-    }
-    if (!price || isNaN(price) || price <= 0 || price > 999999) {
-      return res.status(400).json({ error: 'Invalid price (0.01-999999)' })
-    }
-    if (!category || !['Electronics', 'Clothing', 'Home', 'Sports', 'Books'].includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' })
-    }
-    if (!image || !image.startsWith('http')) {
-      return res.status(400).json({ error: 'Invalid image URL' })
-    }
-    if (stock === undefined || isNaN(stock) || stock < 0 || stock > 9999) {
-      return res.status(400).json({ error: 'Invalid stock (0-9999)' })
-    }
 
     const product = new Product({
       name: name.trim(),
@@ -60,7 +41,7 @@ router.post('/products', authMiddleware, adminMiddleware, async (req, res) => {
 })
 
 // Update product
-router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) => {
+router.put('/products/:id', authMiddleware, adminMiddleware, validateRequest(schemas.updateProduct), async (req, res) => {
   try {
     // Validate ObjectId
     if (!isValidObjectId(req.params.id)) {
@@ -68,26 +49,6 @@ router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) =>
     }
 
     const { name, description, price, category, image, stock } = req.body
-
-    // Validate inputs
-    if (name && (name.trim().length < 3 || name.length > 100)) {
-      return res.status(400).json({ error: 'Name must be 3-100 characters' })
-    }
-    if (description && (description.trim().length < 10 || description.length > 500)) {
-      return res.status(400).json({ error: 'Description must be 10-500 characters' })
-    }
-    if (price && (isNaN(price) || price <= 0 || price > 999999)) {
-      return res.status(400).json({ error: 'Invalid price (0.01-999999)' })
-    }
-    if (category && !['Electronics', 'Clothing', 'Home', 'Sports', 'Books'].includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' })
-    }
-    if (image && !image.startsWith('http')) {
-      return res.status(400).json({ error: 'Invalid image URL' })
-    }
-    if (stock !== undefined && (isNaN(stock) || stock < 0 || stock > 9999)) {
-      return res.status(400).json({ error: 'Invalid stock (0-9999)' })
-    }
 
     const updateData = {}
     if (name) updateData.name = name.trim()
@@ -100,7 +61,7 @@ router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) =>
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     )
 
     if (!product) {
@@ -138,7 +99,7 @@ router.get('/orders', authMiddleware, adminMiddleware, async (req, res) => {
   }
 })
 
-// Update order status
+// Update order status (admin can override transitions)
 router.put('/orders/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // Validate ObjectId
@@ -152,15 +113,29 @@ router.put('/orders/:id', authMiddleware, adminMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' })
     }
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    )
+    const order = await Order.findById(req.params.id)
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' })
     }
+
+    // Admin can override, but still validate reasonable transitions
+    const validTransitions = {
+      'pending': ['payment', 'pending', 'delivery'], // Admin can skip to delivery
+      'payment': ['delivery', 'pending', 'delivered'], // Admin can skip to delivered
+      'delivery': ['delivered', 'pending'], // Admin can revert or complete
+      'delivered': ['delivered'] // Final state, even admin can't change
+    }
+
+    const currentStatus = order.status
+    if (!validTransitions[currentStatus]?.includes(status)) {
+      return res.status(400).json({ 
+        error: `Cannot transition from ${currentStatus} to ${status}. Delivered orders are final.` 
+      })
+    }
+
+    order.status = status
+    await order.save()
 
     res.json({ data: order, message: 'Order updated' })
   } catch (error) {

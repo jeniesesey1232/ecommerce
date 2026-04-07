@@ -4,9 +4,18 @@ import jwt from 'jsonwebtoken'
 import validator from 'validator'
 import { OAuth2Client } from 'google-auth-library'
 import { User } from '../db.js'
+import { authMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+// Cookie settings for cross-origin (Render + Vercel)
+const cookieOptions = {
+  httpOnly: true,
+  secure: true, // Always HTTPS in production
+  sameSite: 'none', // Allow cross-origin
+  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+}
 
 // Validation helper
 const validateEmail = (email) => {
@@ -60,13 +69,7 @@ router.post('/signup', async (req, res) => {
       { expiresIn: '7d' }
     )
 
-    // Set HttpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    })
+    res.cookie('token', token, cookieOptions)
 
     res.json({
       user: { id: newUser._id, email: newUser.email, role: newUser.role }
@@ -102,13 +105,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     )
 
-    // Set HttpOnly cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    })
+    res.cookie('token', token, cookieOptions)
 
     res.json({
       user: { id: user._id, email: user.email, role: user.role }
@@ -170,13 +167,7 @@ router.post('/google', async (req, res) => {
       { expiresIn: '7d' }
     )
 
-    // Set HttpOnly cookie
-    res.cookie('token', jwtToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    })
+    res.cookie('token', jwtToken, cookieOptions)
 
     res.json({
       user: { id: user._id, email: user.email, role: user.role }
@@ -188,11 +179,7 @@ router.post('/google', async (req, res) => {
 })
 
 router.post('/logout', authMiddleware, (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  })
+  res.clearCookie('token', cookieOptions)
   res.json({ message: 'Logged out successfully' })
 })
 
