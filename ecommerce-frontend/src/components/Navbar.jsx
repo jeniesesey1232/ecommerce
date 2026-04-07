@@ -9,24 +9,24 @@ export default function Navbar() {
   const [cartCount, setCartCount] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
 
-  const checkAuthStatus = () => {
-    const token = secureStorage.getToken()
-    const user = secureStorage.getUser()
-    setIsLoggedIn(!!token)
-    setIsAdmin(user?.role === 'admin')
+  const checkAuthStatus = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`)
+      const user = response.data.user
+      secureStorage.setUser(user)
+      secureStorage.setUserRole(user.role)
+      setIsLoggedIn(true)
+      setIsAdmin(user.role === 'admin')
+    } catch (error) {
+      setIsLoggedIn(false)
+      setIsAdmin(false)
+      secureStorage.clearAuth()
+    }
   }
 
   const updateCartCount = async () => {
     try {
-      const token = secureStorage.getToken()
-      if (!token) {
-        setCartCount(0)
-        return
-      }
-
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/cart/my-cart`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/cart/my-cart`)
       const cart = response.data.data || []
       const count = cart.reduce((sum, item) => sum + item.quantity, 0)
       setCartCount(count)
@@ -40,9 +40,6 @@ export default function Navbar() {
     checkAuthStatus()
     updateCartCount()
 
-    // Listen for storage changes (login/logout from other tabs)
-    window.addEventListener('storage', checkAuthStatus)
-    
     // Check auth status and cart periodically
     const interval = setInterval(() => {
       checkAuthStatus()
@@ -50,12 +47,16 @@ export default function Navbar() {
     }, 2000)
 
     return () => {
-      window.removeEventListener('storage', checkAuthStatus)
       clearInterval(interval)
     }
   }, [])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/logout`)
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
     secureStorage.clearAuth()
     setIsLoggedIn(false)
     window.location.href = '/'

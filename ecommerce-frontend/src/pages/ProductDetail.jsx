@@ -16,11 +16,21 @@ export default function ProductDetail() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
-    const token = secureStorage.getToken()
-    const user = secureStorage.getUser()
-    setIsLoggedIn(!!token)
-    setIsAdmin(user?.role === 'admin')
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`)
+        const user = response.data.user
+        secureStorage.setUser(user)
+        secureStorage.setUserRole(user.role)
+        setIsLoggedIn(true)
+        setIsAdmin(user.role === 'admin')
+      } catch (error) {
+        setIsLoggedIn(false)
+        setIsAdmin(false)
+      }
+    }
     
+    checkAuth()
     fetchProduct()
   }, [id])
 
@@ -37,14 +47,6 @@ export default function ProductDetail() {
   }
 
   const handleAddToCart = async () => {
-    // Check if user is logged in
-    const token = secureStorage.getToken()
-    if (!token) {
-      // Redirect to login with return URL
-      navigate('/login?redirect=/product/' + id)
-      return
-    }
-
     try {
       // Send to backend API
       const response = await axios.post(
@@ -55,8 +57,7 @@ export default function ProductDetail() {
           price: product.price,
           name: product.name,
           image: product.image
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
 
       // Update local cart for UI
@@ -69,7 +70,12 @@ export default function ProductDetail() {
       }, 1500)
     } catch (error) {
       console.error('Error adding to cart:', error)
-      alert('Failed to add item to cart')
+      if (error.response?.status === 401) {
+        // Redirect to login with return URL
+        navigate('/login?redirect=/product/' + id)
+      } else {
+        alert('Failed to add item to cart')
+      }
     }
   }
 

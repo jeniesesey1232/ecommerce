@@ -27,26 +27,33 @@ function AdminDashboard() {
   const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '' })
 
   useEffect(() => {
-    const token = secureStorage.getToken()
-    const userRole = secureStorage.getUserRole()
-    
-    if (!token || userRole !== 'admin') {
-      navigate('/login')
-      return
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/auth/me`)
+        const user = response.data.user
+        
+        if (user.role !== 'admin') {
+          navigate('/login')
+          return
+        }
+        
+        secureStorage.setUser(user)
+        secureStorage.setUserRole(user.role)
+        fetchData()
+      } catch (error) {
+        navigate('/login')
+      }
     }
 
-    fetchData()
+    checkAuth()
   }, [navigate])
 
   const fetchData = async () => {
     try {
-      const token = secureStorage.getToken()
-      const config = { headers: { Authorization: `Bearer ${token}` } }
-
       const [statsRes, productsRes, ordersRes] = await Promise.all([
-        axios.get(`${API_URL}/admin/stats`, config),
+        axios.get(`${API_URL}/admin/stats`),
         axios.get(`${API_URL}/products`),
-        axios.get(`${API_URL}/admin/orders`, config)
+        axios.get(`${API_URL}/admin/orders`)
       ])
 
       setStats(statsRes.data.data || statsRes.data)
@@ -65,14 +72,12 @@ function AdminDashboard() {
 
   const handleStockUpdate = async (productId) => {
     try {
-      const token = secureStorage.getToken()
       const newStock = editingStock[productId]
       
       const product = products.find(p => p.id === productId)
       await axios.put(
         `${API_URL}/admin/products/${productId}`,
-        { ...product, stock: parseInt(newStock) },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { ...product, stock: parseInt(newStock) }
       )
 
       setProducts(products.map(p => 
@@ -88,12 +93,7 @@ function AdminDashboard() {
   const handleAddProduct = async (e) => {
     e.preventDefault()
     try {
-      const token = secureStorage.getToken()
-      await axios.post(
-        `${API_URL}/admin/products`,
-        newProduct,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      await axios.post(`${API_URL}/admin/products`, newProduct)
       
       setShowAddProduct(false)
       setNewProduct({ name: '', description: '', price: '', category: 'Electronics', image: '', stock: '' })
@@ -107,11 +107,9 @@ function AdminDashboard() {
   const handleEditProduct = async (e) => {
     e.preventDefault()
     try {
-      const token = secureStorage.getToken()
       await axios.put(
         `${API_URL}/admin/products/${editingProduct.id}`,
-        editingProduct,
-        { headers: { Authorization: `Bearer ${token}` } }
+        editingProduct
       )
       
       setEditingProduct(null)
@@ -130,11 +128,7 @@ function AdminDashboard() {
       type: 'delete',
       onConfirm: async () => {
         try {
-          const token = secureStorage.getToken()
-          await axios.delete(
-            `${API_URL}/admin/products/${productId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
+          await axios.delete(`${API_URL}/admin/products/${productId}`)
           setConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null, type: 'delete' })
           fetchData()
         } catch (error) {
@@ -474,11 +468,9 @@ function AdminDashboard() {
                             value={order.status} 
                             onChange={async (e) => {
                               try {
-                                const token = secureStorage.getToken()
                                 await axios.put(
                                   `${API_URL}/orders/${order._id || order.id}/status`,
-                                  { status: e.target.value },
-                                  { headers: { Authorization: `Bearer ${token}` } }
+                                  { status: e.target.value }
                                 )
                                 fetchData()
                               } catch (error) {

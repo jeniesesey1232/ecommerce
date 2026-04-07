@@ -13,21 +13,26 @@ export default function Profile() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = secureStorage.getToken()
-    if (!token) {
-      navigate('/login')
-      return
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/auth/me`)
+        const userData = response.data.user
+        
+        if (userData.role === 'admin') {
+          navigate('/admin')
+          return
+        }
+        
+        secureStorage.setUser(userData)
+        secureStorage.setUserRole(userData.role)
+        setUser(userData)
+        fetchOrders()
+      } catch (error) {
+        navigate('/login')
+      }
     }
 
-    const userData = secureStorage.getUser()
-    
-    if (userData?.role === 'admin') {
-      navigate('/admin')
-      return
-    }
-    
-    setUser(userData)
-    fetchOrders(token)
+    checkAuth()
   }, [navigate])
 
   const handleEditProfile = () => {
@@ -58,11 +63,9 @@ export default function Profile() {
     }
   }
 
-  const fetchOrders = async (token) => {
+  const fetchOrders = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/my-orders`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/orders/my-orders`)
       setOrders(response.data.data || [])
     } catch (error) {
       console.error('Error fetching orders:', error)

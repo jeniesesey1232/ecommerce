@@ -10,21 +10,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const token = secureStorage.getToken()
-    if (!token) {
-      navigate('/login')
-      return
-    }
-
-    const userData = secureStorage.getUser()
-    
-    // Redirect admin users to admin dashboard
-    if (userData?.role === 'admin') {
-      navigate('/admin')
-      return
-    }
-    
-    // Redirect regular users to profile page
+    // Dashboard redirects to profile page
     navigate('/profile')
   }, [navigate])
 

@@ -13,11 +13,7 @@ export default function OrderConfirmation() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const token = secureStorage.getToken()
-        const response = await axios.get(
-          `${API_URL}/orders/${orderId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const response = await axios.get(`${API_URL}/orders/${orderId}`)
         setOrder(response.data.data)
       } catch (error) {
         console.error('Error fetching order:', error)

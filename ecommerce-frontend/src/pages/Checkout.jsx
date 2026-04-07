@@ -26,18 +26,22 @@ export default function Checkout() {
   })
 
   useEffect(() => {
-    const token = secureStorage.getToken()
-    const user = secureStorage.getUser()
-    
-    if (!token) {
-      setIsLoggedIn(false)
-    } else {
-      setIsLoggedIn(true)
-      // Pre-fill email if logged in
-      if (user?.email) {
-        setFormData(prev => ({ ...prev, email: user.email }))
+    const checkAuth = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/auth/me`)
+        const user = response.data.user
+        secureStorage.setUser(user)
+        setIsLoggedIn(true)
+        // Pre-fill email if logged in
+        if (user?.email) {
+          setFormData(prev => ({ ...prev, email: user.email }))
+        }
+      } catch (error) {
+        setIsLoggedIn(false)
       }
     }
+    
+    checkAuth()
   }, [])
 
   const handleChange = (e) => {
@@ -70,13 +74,8 @@ export default function Checkout() {
 
     setLoading(true)
     try {
-      const token = secureStorage.getToken()
-      
       // Fetch cart from API
-      const cartResponse = await axios.get(
-        `${API_URL}/cart/my-cart`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      const cartResponse = await axios.get(`${API_URL}/cart/my-cart`)
       const cart = cartResponse.data.data || []
       
       if (cart.length === 0) {
@@ -95,17 +94,13 @@ export default function Checkout() {
           shipping_address: shippingAddress,
           items: cart,
           total
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+        }
       )
 
       const order = response.data.data
       
       // Clear cart via API
-      await axios.delete(
-        `${API_URL}/cart/clear`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      await axios.delete(`${API_URL}/cart/clear`)
 
       navigate(`/order-confirmation/${order._id || order.id}`)
     } catch (error) {
@@ -120,14 +115,8 @@ export default function Checkout() {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const token = secureStorage.getToken()
-        if (token) {
-          const response = await axios.get(
-            `${API_URL}/cart/my-cart`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          )
-          setCart(response.data.data || [])
-        }
+        const response = await axios.get(`${API_URL}/cart/my-cart`)
+        setCart(response.data.data || [])
       } catch (error) {
         console.error('Error fetching cart:', error)
       }
