@@ -5,6 +5,7 @@ import { secureStorage } from '../utils/storage'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+const validatePassword = (password) => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password)
 
 export default function Signup() {
   const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' })
@@ -24,7 +25,7 @@ export default function Signup() {
     const newErrors = {}
     
     if (!validateEmail(formData.email)) newErrors.email = 'Invalid email'
-    if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters'
+    if (!validatePassword(formData.password)) newErrors.password = 'Password must be at least 8 characters with uppercase, lowercase, and number'
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match'
 
     setErrors(newErrors)
