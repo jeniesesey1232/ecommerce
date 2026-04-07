@@ -103,13 +103,31 @@ export default function Cart() {
                 <p className="text-gray-600">${item.price}</p>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <input
-                  type="number"
-                  min="1"
-                  value={item.quantity}
-                  onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 1)}
-                  className="border rounded px-2 py-1 w-16"
-                />
+                <div className="flex items-center border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => updateQuantity(item.productId, parseInt(e.target.value) || 1)}
+                    className="w-16 text-center py-2 border-x focus:outline-none"
+                  />
+                  <button
+                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                </div>
                 <span className="font-bold w-24 text-right">${(item.price * item.quantity).toFixed(2)}</span>
                 <button
                   onClick={() => removeItem(item.productId)}
