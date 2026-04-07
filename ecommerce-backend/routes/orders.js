@@ -28,8 +28,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' })
     }
 
-    // Check if user owns this order
-    if (order.user_id.toString() !== req.user.userId.toString()) {
+    // Check if user owns this order or is admin
+    const isAdmin = req.user.role === 'admin'
+    const isOwner = order.user_id.toString() === req.user.userId.toString()
+
+    if (!isAdmin && !isOwner) {
       return res.status(403).json({ error: 'Access denied' })
     }
 

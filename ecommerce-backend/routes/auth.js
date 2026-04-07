@@ -120,7 +120,12 @@ router.post('/google', async (req, res) => {
       return res.status(401).json({ error: 'Invalid Google token' })
     }
 
-    const { email, email_verified } = googleResponse.data
+    const { email, email_verified, aud } = googleResponse.data
+
+    // Verify the token was issued for this app (audience check)
+    if (process.env.GOOGLE_CLIENT_ID && aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({ error: 'Token not issued for this application' })
+    }
 
     // Ensure email is verified
     if (!email_verified) {
