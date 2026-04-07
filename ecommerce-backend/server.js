@@ -3,7 +3,9 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
+import cookieParser from 'cookie-parser'
 import { connectDB } from './db.js'
+import { errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import cartRoutes from './routes/cart.js'
@@ -75,6 +77,7 @@ const searchLimiter = rateLimit({
   message: 'Too many search requests, please try again later.',
 })
 
+app.use(cookieParser())
 app.use(express.json({ limit: '10mb' }))
 app.use(limiter)
 
@@ -88,6 +91,9 @@ app.use('/api/admin', adminRoutes)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK' })
 })
+
+// Error handler MUST be last
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {

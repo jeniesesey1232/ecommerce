@@ -60,8 +60,15 @@ router.post('/signup', async (req, res) => {
       { expiresIn: '7d' }
     )
 
+    // Set HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    })
+
     res.json({
-      token,
       user: { id: newUser._id, email: newUser.email, role: newUser.role }
     })
   } catch (error) {
@@ -95,8 +102,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: '7d' }
     )
 
+    // Set HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    })
+
     res.json({
-      token,
       user: { id: user._id, email: user.email, role: user.role }
     })
   } catch (error) {
@@ -119,6 +133,12 @@ router.post('/google', async (req, res) => {
     })
 
     const payload = ticket.getPayload()
+    
+    // Verify token hasn't expired
+    const now = Math.floor(Date.now() / 1000)
+    if (payload.exp && payload.exp < now) {
+      return res.status(401).json({ error: 'Token expired' })
+    }
     
     // Verify issuer
     if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') {
@@ -150,14 +170,30 @@ router.post('/google', async (req, res) => {
       { expiresIn: '7d' }
     )
 
+    // Set HttpOnly cookie
+    res.cookie('token', jwtToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    })
+
     res.json({
-      token: jwtToken,
       user: { id: user._id, email: user.email, role: user.role }
     })
   } catch (error) {
     console.error('Google auth error:', error.message)
     res.status(401).json({ error: 'Google authentication failed' })
   }
+})
+
+router.post('/logout', authMiddleware, (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  })
+  res.json({ message: 'Logged out successfully' })
 })
 
 export default router

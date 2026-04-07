@@ -13,9 +13,7 @@ const cleanupOldData = () => {
 cleanupOldData()
 
 export const secureStorage = {
-  // Auth data - stored in sessionStorage (cleared on browser close)
-  setToken: (token) => sessionStorage.setItem('token', token),
-  getToken: () => sessionStorage.getItem('token'),
+  // Auth data - user info only (token is in HttpOnly cookie)
   setUser: (user) => sessionStorage.setItem('user', JSON.stringify(user)),
   getUser: () => {
     const user = sessionStorage.getItem('user')
@@ -40,7 +38,6 @@ export const secureStorage = {
   
   // Clear all auth data on logout
   clearAuth: () => {
-    sessionStorage.removeItem('token')
     sessionStorage.removeItem('user')
     sessionStorage.removeItem('userRole')
   },

@@ -8,6 +8,9 @@ const router = express.Router()
 // Get MongoDB connection
 const getDB = () => mongoose.connection
 
+// Helper to validate ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
+
 // Get user's cart
 router.get('/my-cart', authMiddleware, async (req, res) => {
   try {
@@ -35,6 +38,11 @@ router.post('/add-item', authMiddleware, async (req, res) => {
     const userId = req.user.userId || req.user.id
     const userIdStr = userId.toString()
     const { productId, quantity } = req.body
+
+    // Validate ObjectId
+    if (!isValidObjectId(productId)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
 
     // Validate quantity
     if (!quantity || quantity < 1 || quantity > 99) {
@@ -106,6 +114,11 @@ router.delete('/remove-item/:productId', authMiddleware, async (req, res) => {
     const userIdStr = userId.toString()
     const productId = req.params.productId
 
+    // Validate ObjectId
+    if (!isValidObjectId(productId)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
+
     const db = getDB()
     const cartsCollection = db.collection('carts')
     
@@ -129,6 +142,11 @@ router.put('/update-item/:productId', authMiddleware, async (req, res) => {
     const userIdStr = userId.toString()
     const productId = req.params.productId
     const { quantity } = req.body
+
+    // Validate ObjectId
+    if (!isValidObjectId(productId)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
 
     // Validate quantity
     if (!quantity || quantity < 0 || quantity > 99) {

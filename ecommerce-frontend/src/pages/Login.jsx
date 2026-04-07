@@ -44,7 +44,7 @@ export default function Login() {
         password: formData.password
       })
 
-      secureStorage.setToken(response.data.token)
+      // Token is now in HttpOnly cookie automatically
       secureStorage.setUser({ id: response.data.user.id, email: response.data.user.email, role: response.data.user.role })
       secureStorage.setUserRole(response.data.user.role)
       
@@ -63,7 +63,7 @@ export default function Login() {
         credential: credentialResponse.credential
       })
 
-      secureStorage.setToken(response.data.token)
+      // Token is now in HttpOnly cookie automatically
       secureStorage.setUser({ id: response.data.user.id, email: response.data.user.email, role: response.data.user.role })
       secureStorage.setUserRole(response.data.user.role)
       
