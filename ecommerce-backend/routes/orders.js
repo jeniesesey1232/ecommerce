@@ -73,17 +73,25 @@ router.post('/create', authMiddleware, async (req, res) => {
     const validatedItems = []
 
     for (const item of items) {
+      // Get product ID (handle both 'id' and 'productId' fields)
+      const productId = item.productId || item.product_id || item.id
+      
+      if (!productId) {
+        await session.abortTransaction()
+        return res.status(400).json({ error: 'Invalid item: missing product ID' })
+      }
+
       // Validate quantity is positive integer
       if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) {
         await session.abortTransaction()
-        return res.status(400).json({ error: `Invalid quantity for item ${item.id}` })
+        return res.status(400).json({ error: `Invalid quantity for product ${productId}` })
       }
 
-      const product = await Product.findById(item.id).session(session)
+      const product = await Product.findById(productId).session(session)
       
       if (!product) {
         await session.abortTransaction()
-        return res.status(400).json({ error: `Product ${item.id} not found` })
+        return res.status(400).json({ error: `Product ${productId} not found` })
       }
 
       if (product.stock < item.quantity) {
