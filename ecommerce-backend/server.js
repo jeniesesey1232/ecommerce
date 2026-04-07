@@ -71,6 +71,12 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
 })
 
+const authCheckLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // 60 auth checks per minute (reasonable for session validation)
+  message: 'Too many requests, please try again later.',
+})
+
 const searchLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 30, // 30 searches per minute
@@ -81,7 +87,12 @@ app.use(cookieParser())
 app.use(express.json({ limit: '10mb' }))
 app.use(limiter)
 
-app.use('/api/auth', authLimiter, authRoutes)
+// Apply specific rate limiters to auth routes
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/signup', authLimiter)
+app.use('/api/auth/google', authLimiter)
+app.use('/api/auth/me', authCheckLimiter) // More lenient for session checks
+app.use('/api/auth', authRoutes)
 app.use('/api/products/search', searchLimiter) // Rate limit search before general products route
 app.use('/api/products', productRoutes)
 app.use('/api/cart', cartRoutes)

@@ -31,7 +31,7 @@ export default function Navbar() {
       const count = cart.reduce((sum, item) => sum + item.quantity, 0)
       setCartCount(count)
     } catch (error) {
-      console.error('Error fetching cart count:', error)
+      // Silently fail - user not logged in
       setCartCount(0)
     }
   }
@@ -40,11 +40,11 @@ export default function Navbar() {
     checkAuthStatus()
     updateCartCount()
 
-    // Check auth status and cart periodically
+    // Check auth status and cart less frequently (every 30 seconds instead of 2)
     const interval = setInterval(() => {
       checkAuthStatus()
       updateCartCount()
-    }, 2000)
+    }, 30000)
 
     return () => {
       clearInterval(interval)
