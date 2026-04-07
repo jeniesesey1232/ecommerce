@@ -41,13 +41,6 @@ export default function Signup() {
     setErrors({ submit: 'Google sign-in failed. Please try again.' })
   }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }))
-    }
-  }
 
   const validateForm = () => {
     const newErrors = {}
