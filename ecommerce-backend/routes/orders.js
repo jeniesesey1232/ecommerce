@@ -9,6 +9,9 @@ const router = express.Router()
 // Sanitize all inputs
 router.use(mongoSanitize())
 
+// Helper to validate ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
+
 // Get user's orders
 router.get('/my-orders', authMiddleware, async (req, res) => {
   try {
@@ -22,6 +25,11 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 // Get order by ID
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid order ID' })
+    }
+
     const order = await Order.findById(req.params.id)
     
     if (!order) {
@@ -132,6 +140,11 @@ router.post('/create', authMiddleware, async (req, res) => {
 // Update order status
 router.put('/:id/status', authMiddleware, async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid order ID' })
+    }
+
     const { status } = req.body
     const validStatuses = ['pending', 'payment', 'delivery', 'delivered']
 
@@ -156,6 +169,21 @@ router.put('/:id/status', authMiddleware, async (req, res) => {
     // Regular users can only cancel (set to pending)
     if (!isAdmin && status !== 'pending') {
       return res.status(403).json({ error: 'Only admins can change order status' })
+    }
+
+    // Validate status transitions (prevent invalid flows)
+    const validTransitions = {
+      'pending': ['payment', 'pending'],
+      'payment': ['delivery', 'pending'],
+      'delivery': ['delivered', 'pending'],
+      'delivered': ['delivered'] // Final state
+    }
+
+    const currentStatus = order.status
+    if (!validTransitions[currentStatus]?.includes(status)) {
+      return res.status(400).json({ 
+        error: `Cannot transition from ${currentStatus} to ${status}` 
+      })
     }
 
     order.status = status

@@ -1,7 +1,11 @@
 import express from 'express'
+import mongoose from 'mongoose'
 import { Product } from '../db.js'
 
 const router = express.Router()
+
+// Helper to validate ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
 
 // Get all products
 router.get('/', async (req, res) => {
@@ -26,6 +30,11 @@ router.get('/', async (req, res) => {
 // Get product by ID
 router.get('/:id', async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
+
     const product = await Product.findById(req.params.id)
     if (!product) {
       return res.status(404).json({ error: 'Product not found' })

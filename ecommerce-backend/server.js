@@ -18,7 +18,22 @@ const app = express()
 await connectDB()
 
 // Security middleware
-app.use(helmet())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com", "https://apis.google.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", process.env.NODE_ENV === 'production' ? 'https://ecommerce-7zzz.onrender.com' : 'http://localhost:5000'],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["https://accounts.google.com", "https://www.google.com"]
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}))
 
 // CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production' 
@@ -54,10 +69,17 @@ const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
 })
 
+const searchLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 30, // 30 searches per minute
+  message: 'Too many search requests, please try again later.',
+})
+
 app.use(express.json({ limit: '10mb' }))
 app.use(limiter)
 
 app.use('/api/auth', authLimiter, authRoutes)
+app.use('/api/products/search', searchLimiter) // Rate limit search before general products route
 app.use('/api/products', productRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/orders', orderRoutes)

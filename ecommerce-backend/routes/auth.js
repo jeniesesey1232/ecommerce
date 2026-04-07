@@ -2,10 +2,11 @@ import express from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import validator from 'validator'
-import axios from 'axios'
+import { OAuth2Client } from 'google-auth-library'
 import { User } from '../db.js'
 
 const router = express.Router()
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
 // Validation helper
 const validateEmail = (email) => {
@@ -44,7 +45,7 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' })
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10)
     const newUser = new User({
       email,
       password: hashedPassword,
@@ -84,7 +85,7 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ email })
     
-    if (!user || !bcrypt.compareSync(password, user.password)) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
 
@@ -111,26 +112,25 @@ router.post('/google', async (req, res) => {
       return res.status(400).json({ error: 'Credential required' })
     }
 
-    // Verify Google ID token with Google's API
-    const googleResponse = await axios.get(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
-    )
+    // Verify with google-auth-library (more secure than tokeninfo)
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    })
 
-    if (!googleResponse.data || !googleResponse.data.email) {
-      return res.status(401).json({ error: 'Invalid Google token' })
+    const payload = ticket.getPayload()
+    
+    // Verify issuer
+    if (payload.iss !== 'accounts.google.com' && payload.iss !== 'https://accounts.google.com') {
+      return res.status(401).json({ error: 'Invalid token issuer' })
     }
 
-    const { email, email_verified, aud } = googleResponse.data
-
-    // Verify the token was issued for this app (audience check)
-    if (process.env.GOOGLE_CLIENT_ID && aud !== process.env.GOOGLE_CLIENT_ID) {
-      return res.status(401).json({ error: 'Token not issued for this application' })
-    }
-
-    // Ensure email is verified
-    if (!email_verified) {
+    // Verify email is verified
+    if (!payload.email_verified) {
       return res.status(401).json({ error: 'Email not verified by Google' })
     }
+
+    const email = payload.email
 
     // Find or create user
     let user = await User.findOne({ email })
@@ -138,7 +138,7 @@ router.post('/google', async (req, res) => {
     if (!user) {
       user = new User({
         email,
-        password: bcrypt.hashSync(Math.random().toString(36), 10), // Random password for OAuth users
+        password: await bcrypt.hash(Math.random().toString(36), 10),
         role: 'user'
       })
       await user.save()

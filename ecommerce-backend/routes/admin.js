@@ -1,8 +1,12 @@
 import express from 'express'
+import mongoose from 'mongoose'
 import { Product, Order, User } from '../db.js'
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()
+
+// Helper to validate ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id)
 
 // Get all products (admin)
 router.get('/products', authMiddleware, adminMiddleware, async (req, res) => {
@@ -58,6 +62,11 @@ router.post('/products', authMiddleware, adminMiddleware, async (req, res) => {
 // Update product
 router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
+
     const { name, description, price, category, image, stock } = req.body
 
     // Validate inputs
@@ -107,6 +116,11 @@ router.put('/products/:id', authMiddleware, adminMiddleware, async (req, res) =>
 // Delete product
 router.delete('/products/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid product ID' })
+    }
+
     await Product.findByIdAndDelete(req.params.id)
     res.json({ message: 'Product deleted' })
   } catch (error) {
@@ -127,6 +141,11 @@ router.get('/orders', authMiddleware, adminMiddleware, async (req, res) => {
 // Update order status
 router.put('/orders/:id', authMiddleware, adminMiddleware, async (req, res) => {
   try {
+    // Validate ObjectId
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid order ID' })
+    }
+
     const { status } = req.body
 
     if (!['pending', 'payment', 'delivery', 'delivered'].includes(status)) {
