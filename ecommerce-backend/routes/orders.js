@@ -41,14 +41,19 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
 // Create order
 router.post('/create', authMiddleware, async (req, res) => {
+  const session = await mongoose.startSession()
+  session.startTransaction()
+
   try {
     const { shipping_address, items } = req.body
 
     if (!shipping_address) {
+      await session.abortTransaction()
       return res.status(400).json({ error: 'Shipping address required' })
     }
 
     if (!items || items.length === 0) {
+      await session.abortTransaction()
       return res.status(400).json({ error: 'Cart is empty' })
     }
 
@@ -57,13 +62,21 @@ router.post('/create', authMiddleware, async (req, res) => {
     const validatedItems = []
 
     for (const item of items) {
-      const product = await Product.findById(item.id)
+      // Validate quantity is positive integer
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) {
+        await session.abortTransaction()
+        return res.status(400).json({ error: `Invalid quantity for item ${item.id}` })
+      }
+
+      const product = await Product.findById(item.id).session(session)
       
       if (!product) {
+        await session.abortTransaction()
         return res.status(400).json({ error: `Product ${item.id} not found` })
       }
 
       if (product.stock < item.quantity) {
+        await session.abortTransaction()
         return res.status(400).json({ error: `Insufficient stock for ${product.name}` })
       }
 
@@ -78,12 +91,17 @@ router.post('/create', authMiddleware, async (req, res) => {
         quantity: item.quantity
       })
 
-      // Decrease stock
-      await Product.findByIdAndUpdate(
-        product._id,
+      // Decrease stock atomically within transaction
+      const updateResult = await Product.findOneAndUpdate(
+        { _id: product._id, stock: { $gte: item.quantity } },
         { $inc: { stock: -item.quantity } },
-        { new: true }
+        { new: true, session }
       )
+
+      if (!updateResult) {
+        await session.abortTransaction()
+        return res.status(400).json({ error: `Stock changed for ${product.name}, please try again` })
+      }
     }
 
     // Create order with validated data
@@ -95,12 +113,16 @@ router.post('/create', authMiddleware, async (req, res) => {
       status: 'pending'
     })
 
-    await order.save()
+    await order.save({ session })
+    await session.commitTransaction()
 
     res.json({ data: order, message: 'Order created successfully' })
   } catch (error) {
+    await session.abortTransaction()
     console.error('Order creation error:', error)
     res.status(500).json({ error: 'Failed to create order' })
+  } finally {
+    session.endSession()
   }
 })
 
@@ -114,15 +136,27 @@ router.put('/:id/status', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' })
     }
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    )
+    const order = await Order.findById(req.params.id)
 
     if (!order) {
       return res.status(404).json({ error: 'Order not found' })
     }
+
+    // Only admin or order owner can update status
+    const isAdmin = req.user.role === 'admin'
+    const isOwner = order.user_id.toString() === req.user.userId.toString()
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+
+    // Regular users can only cancel (set to pending)
+    if (!isAdmin && status !== 'pending') {
+      return res.status(403).json({ error: 'Only admins can change order status' })
+    }
+
+    order.status = status
+    await order.save()
 
     res.json({ data: order, message: 'Order status updated successfully' })
   } catch (error) {

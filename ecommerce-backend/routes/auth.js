@@ -55,7 +55,7 @@ router.post('/signup', async (req, res) => {
 
     const token = jwt.sign(
       { userId: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
@@ -90,7 +90,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
@@ -105,23 +105,26 @@ router.post('/login', async (req, res) => {
 
 router.post('/google', async (req, res) => {
   try {
-    const { token } = req.body
+    const { credential } = req.body
 
-    if (!token) {
-      return res.status(400).json({ error: 'Token required' })
+    if (!credential) {
+      return res.status(400).json({ error: 'Credential required' })
     }
 
-    // Decode JWT token from Google (don't verify, just decode)
-    const parts = token.split('.')
-    if (parts.length !== 3) {
-      return res.status(400).json({ error: 'Invalid token format' })
+    // Verify Google ID token with Google's API
+    const googleResponse = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+    )
+
+    if (!googleResponse.data || !googleResponse.data.email) {
+      return res.status(401).json({ error: 'Invalid Google token' })
     }
 
-    const decoded = JSON.parse(Buffer.from(parts[1], 'base64').toString())
-    const { email, name } = decoded
+    const { email, email_verified } = googleResponse.data
 
-    if (!email) {
-      return res.status(400).json({ error: 'Could not get email from Google' })
+    // Ensure email is verified
+    if (!email_verified) {
+      return res.status(401).json({ error: 'Email not verified by Google' })
     }
 
     // Find or create user
@@ -130,7 +133,7 @@ router.post('/google', async (req, res) => {
     if (!user) {
       user = new User({
         email,
-        password: bcrypt.hashSync(Math.random().toString(), 10),
+        password: bcrypt.hashSync(Math.random().toString(36), 10), // Random password for OAuth users
         role: 'user'
       })
       await user.save()
@@ -138,7 +141,7 @@ router.post('/google', async (req, res) => {
 
     const jwtToken = jwt.sign(
       { userId: user._id, role: user.role },
-      process.env.JWT_SECRET || 'secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
 
@@ -148,7 +151,7 @@ router.post('/google', async (req, res) => {
     })
   } catch (error) {
     console.error('Google auth error:', error.message)
-    res.status(500).json({ error: 'Google authentication failed' })
+    res.status(401).json({ error: 'Google authentication failed' })
   }
 })
 

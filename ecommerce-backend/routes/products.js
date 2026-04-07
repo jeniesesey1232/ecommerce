@@ -49,12 +49,21 @@ router.get('/:id', async (req, res) => {
 // Search products
 router.get('/search/:query', async (req, res) => {
   try {
+    // Escape special regex characters to prevent ReDoS
+    const sanitizedQuery = req.params.query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    
+    // Limit query length
+    if (sanitizedQuery.length > 100) {
+      return res.status(400).json({ error: 'Search query too long' })
+    }
+
     const products = await Product.find({
       $or: [
-        { name: { $regex: req.params.query, $options: 'i' } },
-        { description: { $regex: req.params.query, $options: 'i' } }
+        { name: { $regex: sanitizedQuery, $options: 'i' } },
+        { description: { $regex: sanitizedQuery, $options: 'i' } }
       ]
-    })
+    }).limit(50) // Limit results
+
     const formattedProducts = products.map(p => ({
       id: p._id,
       name: p.name,
