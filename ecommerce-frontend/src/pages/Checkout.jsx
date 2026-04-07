@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 const validateName = (name) => name.trim().length >= 2
 const validateAddress = (address) => address.trim().length >= 5
-const validateZip = (zip) => /^\d{5}(-\d{4})?$/.test(zip)
+const validateZip = (zip) => /^[0-9a-zA-Z\s\-]{3,}$/.test(zip)
 
 export default function Checkout() {
   const navigate = useNavigate()
@@ -70,8 +70,14 @@ export default function Checkout() {
 
     setLoading(true)
     try {
-      const cart = secureStorage.getCart()
       const token = secureStorage.getToken()
+      
+      // Fetch cart from API
+      const cartResponse = await axios.get(
+        `${API_URL}/cart/my-cart`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      const cart = cartResponse.data.data || []
       
       if (cart.length === 0) {
         setErrors({ submit: 'Cart is empty' })
@@ -95,8 +101,11 @@ export default function Checkout() {
 
       const order = response.data.data
       
-      // Clear cart
-      secureStorage.setCart([])
+      // Clear cart via API
+      await axios.delete(
+        `${API_URL}/cart/clear`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
 
       navigate(`/order-confirmation/${order._id || order.id}`)
     } catch (error) {
@@ -106,7 +115,26 @@ export default function Checkout() {
     }
   }
 
-  const cart = secureStorage.getCart()
+  const [cart, setCart] = useState([])
+
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const token = secureStorage.getToken()
+        if (token) {
+          const response = await axios.get(
+            `${API_URL}/cart/my-cart`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+          setCart(response.data.data || [])
+        }
+      } catch (error) {
+        console.error('Error fetching cart:', error)
+      }
+    }
+    fetchCart()
+  }, [])
+
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
   // Show login prompt if not logged in

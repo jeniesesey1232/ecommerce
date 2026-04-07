@@ -233,7 +233,11 @@ export default function Home() {
 
         {!loading && products.length === 0 && (
           <div className="text-center py-32 rounded-xl" style={{ backgroundColor: '#FFFFFF' }}>
-            <div className="text-7xl mb-6">🔍</div>
+            <div className="text-7xl mb-6 text-gray-300 flex justify-center">
+              <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
             <h3 className="text-3xl font-bold mb-3" style={{ color: '#111111' }}>No products found</h3>
             <p className="text-lg mb-6" style={{ color: '#333333' }}>Try adjusting your search or filters</p>
             <button 

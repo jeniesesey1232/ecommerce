@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { secureStorage } from '../utils/storage'
 
 export default function Navbar() {
@@ -15,9 +16,24 @@ export default function Navbar() {
     setIsAdmin(user?.role === 'admin')
   }
 
-  const updateCartCount = () => {
-    const cart = secureStorage.getCart()
-    setCartCount(cart.reduce((sum, item) => sum + item.quantity, 0))
+  const updateCartCount = async () => {
+    try {
+      const token = secureStorage.getToken()
+      if (!token) {
+        setCartCount(0)
+        return
+      }
+
+      const response = await axios.get('http://localhost:5000/api/cart/my-cart', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const cart = response.data.data || []
+      const count = cart.reduce((sum, item) => sum + item.quantity, 0)
+      setCartCount(count)
+    } catch (error) {
+      console.error('Error fetching cart count:', error)
+      setCartCount(0)
+    }
   }
 
   useEffect(() => {
@@ -27,8 +43,11 @@ export default function Navbar() {
     // Listen for storage changes (login/logout from other tabs)
     window.addEventListener('storage', checkAuthStatus)
     
-    // Check auth status periodically
-    const interval = setInterval(checkAuthStatus, 1000)
+    // Check auth status and cart periodically
+    const interval = setInterval(() => {
+      checkAuthStatus()
+      updateCartCount()
+    }, 2000)
 
     return () => {
       window.removeEventListener('storage', checkAuthStatus)

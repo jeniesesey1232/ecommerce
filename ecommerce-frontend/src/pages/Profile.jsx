@@ -73,10 +73,42 @@ export default function Profile() {
 
   const getStatusSteps = (status) => {
     const steps = [
-      { name: 'Payment', icon: '💳', completed: ['payment', 'pending', 'delivery', 'delivered'].includes(status) },
-      { name: 'Processing', icon: '⏳', completed: ['pending', 'delivery', 'delivered'].includes(status) },
-      { name: 'Shipping', icon: '🚚', completed: ['delivery', 'delivered'].includes(status) },
-      { name: 'Delivered', icon: '✅', completed: status === 'delivered' }
+      { 
+        name: 'Payment', 
+        icon: (
+          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+        ),
+        completed: ['payment', 'pending', 'delivery', 'delivered'].includes(status) 
+      },
+      { 
+        name: 'Processing', 
+        icon: (
+          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+          </svg>
+        ),
+        completed: ['pending', 'delivery', 'delivered'].includes(status) 
+      },
+      { 
+        name: 'Shipping', 
+        icon: (
+          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M18 18.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM9 18.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/><path d="M20 8h-3V4c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14h2a3 3 0 003 3 3 3 0 003-3h6a3 3 0 003 3 3 3 0 003-3h2v-5l-3-4z" />
+          </svg>
+        ),
+        completed: ['delivery', 'delivered'].includes(status) 
+      },
+      { 
+        name: 'Delivered', 
+        icon: (
+          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+          </svg>
+        ),
+        completed: status === 'delivered' 
+      }
     ]
     return steps
   }
@@ -264,7 +296,11 @@ export default function Profile() {
         {/* Orders List */}
         {filteredOrders.length === 0 ? (
           <div className="bg-white rounded-b-xl shadow-sm border border-gray-200 border-t-0 p-16 text-center">
-            <div className="text-6xl mb-4">📋</div>
+            <div className="text-6xl mb-4 text-gray-300 flex justify-center">
+              <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No Orders Yet</h3>
             <p className="text-gray-600 mb-6">You don't have any {activeTab !== 'all' ? getTabLabel(activeTab).toLowerCase() : 'orders'}</p>
             <a href="/" className="inline-block text-white px-8 py-3 rounded-lg hover:opacity-80 transition font-semibold" style={{ backgroundColor: '#111111' }}>
@@ -274,11 +310,11 @@ export default function Profile() {
         ) : (
           <div className="space-y-6 bg-white rounded-b-xl shadow-sm border border-gray-200 border-t-0 p-6">
             {filteredOrders.map(order => (
-              <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+              <div key={order._id || order.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
                 {/* Order Header */}
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Order #{order.id}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">Order #{order._id || order.id}</h3>
                     <p className="text-sm text-gray-600">{new Date(order.created_at).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">
@@ -291,7 +327,8 @@ export default function Profile() {
                 <div className="mb-6 pb-6 border-b border-gray-200">
                   <div className="flex items-center justify-between relative">
                     {getStatusSteps(order.status).map((step, idx) => {
-                      const isLast = idx === getStatusSteps(order.status).length - 1
+                      const steps = getStatusSteps(order.status)
+                      const isLast = idx === steps.length - 1
                       return (
                         <div key={idx} className="flex flex-col items-center flex-1 relative">
                           {/* Connector Line */}
@@ -304,8 +341,8 @@ export default function Profile() {
                           {/* Step Circle */}
                           <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl font-bold mb-3 transition-all relative z-10 ${
                             step.completed 
-                              ? 'bg-emerald-100 border-4 border-emerald-500 shadow-lg' 
-                              : 'bg-gray-100 border-4 border-gray-300'
+                              ? 'bg-emerald-100 border-4 border-emerald-500 shadow-lg text-emerald-600' 
+                              : 'bg-gray-100 border-4 border-gray-300 text-gray-400'
                           }`}>
                             {step.icon}
                           </div>

@@ -36,7 +36,7 @@ export default function ProductDetail() {
     }
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // Check if user is logged in
     const token = secureStorage.getToken()
     if (!token) {
@@ -45,22 +45,32 @@ export default function ProductDetail() {
       return
     }
 
-    const cart = secureStorage.getCart()
-    const existingItem = cart.find(item => item.id === product.id)
+    try {
+      // Send to backend API
+      const response = await axios.post(
+        'http://localhost:5000/api/cart/add-item',
+        {
+          productId: product.id || product._id,
+          quantity,
+          price: product.price,
+          name: product.name,
+          image: product.image
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
 
-    if (existingItem) {
-      existingItem.quantity += quantity
-    } else {
-      cart.push({ ...product, quantity })
+      // Update local cart for UI
+      secureStorage.setCart(response.data.data || [])
+      
+      setShowNotification(true)
+      setTimeout(() => {
+        setShowNotification(false)
+        navigate('/cart')
+      }, 1500)
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      alert('Failed to add item to cart')
     }
-
-    secureStorage.setCart(cart)
-    
-    setShowNotification(true)
-    setTimeout(() => {
-      setShowNotification(false)
-      navigate('/cart')
-    }, 1500)
   }
 
   if (loading) {
@@ -92,10 +102,10 @@ export default function ProductDetail() {
       {showNotification && (
         <div className="fixed top-24 right-4 text-white px-6 py-4 rounded-lg shadow-2xl z-50 animate-slide-in" style={{ backgroundColor: '#111111' }}>
           <div className="flex items-center gap-3">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
-            <span className="font-medium">Added to cart!</span>
+            <span className="font-medium text-white">Added to cart!</span>
           </div>
         </div>
       )}
