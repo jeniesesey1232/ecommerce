@@ -4,6 +4,8 @@ import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
+console.log('API_URL:', API_URL)
+
 export default function Home() {
   const [products, setProducts] = useState([])
   const [filters, setFilters] = useState({ category: '', minPrice: 0, maxPrice: 10000, search: '' })
