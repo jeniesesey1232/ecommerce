@@ -12,9 +12,10 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 // Cookie settings for cross-origin (Render + Vercel)
 const cookieOptions = {
   httpOnly: true,
-  secure: true, // Always HTTPS in production
-  sameSite: 'none', // Allow cross-origin
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  secure: process.env.NODE_ENV === 'production', // HTTPS in production, HTTP in dev
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-origin in prod
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: '/' // Ensure cookie is sent for all paths
 }
 
 // Validation helper

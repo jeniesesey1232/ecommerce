@@ -5,6 +5,15 @@ export const authMiddleware = (req, res, next) => {
     // Read from cookie instead of Authorization header
     const token = req.cookies.token
 
+    // Debug logging in development
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Auth check:', {
+        hasCookie: !!token,
+        cookies: Object.keys(req.cookies),
+        origin: req.headers.origin
+      })
+    }
+
     if (!token) {
       return res.status(401).json({ error: 'No token provided' })
     }
@@ -17,6 +26,9 @@ export const authMiddleware = (req, res, next) => {
     req.user = decoded
     next()
   } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Auth error:', error.message)
+    }
     res.status(401).json({ error: 'Invalid token' })
   }
 }
