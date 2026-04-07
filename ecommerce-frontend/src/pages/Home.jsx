@@ -195,29 +195,38 @@ export default function Home() {
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {products && products.length > 0 ? products.map((product) => (
                 <Link key={product.id || product._id} to={`/product/${product.id || product._id}`} className="group">
-                  <div className="rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border h-full flex flex-col" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E5E5' }}>
+                  <div className="rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border h-full flex flex-col transform hover:-translate-y-1" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E5E5' }}>
                     <div className="relative h-72 overflow-hidden" style={{ backgroundColor: '#F5F5F5' }}>
                       <img 
                         src={product.image} 
                         alt={product.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
-                      <div className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1 rounded-full" style={{ backgroundColor: '#111111' }}>
-                        {product.stock} in stock
+                      <div className="absolute top-4 right-4 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg" style={{ backgroundColor: product.stock > 10 ? '#111111' : '#DC2626' }}>
+                        {product.stock > 10 ? 'In Stock' : `Only ${product.stock} left`}
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      {/* Quick View Button - appears on hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <span className="text-white px-6 py-3 rounded-lg font-semibold shadow-xl transform scale-90 group-hover:scale-100 transition-transform" style={{ backgroundColor: '#111111' }}>
+                          Quick View
+                        </span>
+                      </div>
                     </div>
                     <div className="p-6 flex-1 flex flex-col">
                       <div className="mb-2">
-                        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#111111' }}>{product.category}</span>
+                        <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#666666' }}>{product.category}</span>
                       </div>
-                      <h3 className="font-bold text-xl mb-3 group-hover:opacity-80 transition line-clamp-1" style={{ color: '#111111' }}>{product.name}</h3>
-                      <p className="text-sm mb-4 line-clamp-2 flex-1" style={{ color: '#333333' }}>{product.description}</p>
+                      <h3 className="font-bold text-lg mb-2 group-hover:text-gray-700 transition line-clamp-2 min-h-[3.5rem]" style={{ color: '#111111' }}>{product.name}</h3>
+                      <p className="text-sm mb-4 line-clamp-2 flex-1" style={{ color: '#666666' }}>{product.description}</p>
                       <div className="flex justify-between items-center pt-4 border-t" style={{ borderColor: '#E5E5E5' }}>
-                        <span className="text-3xl font-bold" style={{ color: '#111111' }}>${product.price}</span>
-                        <button className="text-white px-4 py-2 rounded-lg hover:opacity-80 transition font-semibold text-sm" style={{ backgroundColor: '#111111' }}>
-                          View
-                        </button>
+                        <div>
+                          <span className="text-3xl font-bold" style={{ color: '#111111' }}>${product.price}</span>
+                        </div>
+                        <svg className="w-6 h-6 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#111111' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
                     </div>
                   </div>
