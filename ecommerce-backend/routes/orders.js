@@ -1,9 +1,13 @@
 import express from 'express'
 import validator from 'validator'
+import mongoSanitize from 'express-mongo-sanitize'
 import { Order, Cart, Product } from '../db.js'
 import { authMiddleware } from '../middleware/auth.js'
 
 const router = express.Router()
+
+// Sanitize all inputs
+router.use(mongoSanitize())
 
 // Get user's orders
 router.get('/my-orders', authMiddleware, async (req, res) => {
@@ -19,9 +23,16 @@ router.get('/my-orders', authMiddleware, async (req, res) => {
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
+    
     if (!order) {
       return res.status(404).json({ error: 'Order not found' })
     }
+
+    // Check if user owns this order
+    if (order.user_id.toString() !== req.user.userId.toString()) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+
     res.json({ data: order })
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch order' })
@@ -31,7 +42,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // Create order
 router.post('/create', authMiddleware, async (req, res) => {
   try {
-    const { shipping_address, items, total } = req.body
+    const { shipping_address, items } = req.body
 
     if (!shipping_address) {
       return res.status(400).json({ error: 'Shipping address required' })
@@ -41,24 +52,45 @@ router.post('/create', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Cart is empty' })
     }
 
-    if (!total || total <= 0) {
-      return res.status(400).json({ error: 'Invalid total amount' })
-    }
+    // Validate and recalculate prices from database (prevent price manipulation)
+    let calculatedTotal = 0
+    const validatedItems = []
 
-    // Decrease stock for each item
     for (const item of items) {
+      const product = await Product.findById(item.id)
+      
+      if (!product) {
+        return res.status(400).json({ error: `Product ${item.id} not found` })
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({ error: `Insufficient stock for ${product.name}` })
+      }
+
+      // Use price from database, not from client
+      const itemTotal = product.price * item.quantity
+      calculatedTotal += itemTotal
+
+      validatedItems.push({
+        product_id: product._id,
+        name: product.name,
+        price: product.price, // Use DB price
+        quantity: item.quantity
+      })
+
+      // Decrease stock
       await Product.findByIdAndUpdate(
-        item.id,
+        product._id,
         { $inc: { stock: -item.quantity } },
         { new: true }
       )
     }
 
-    // Create order
+    // Create order with validated data
     const order = new Order({
       user_id: req.user.userId,
-      items,
-      total,
+      items: validatedItems,
+      total: calculatedTotal, // Use calculated total
       shipping_address,
       status: 'pending'
     })

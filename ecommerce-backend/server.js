@@ -21,9 +21,19 @@ await connectDB()
 app.use(helmet())
 
 // CORS configuration
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ['https://ecommerce-three-eta-54.vercel.app', 'https://ecommerce-two-flame-69.vercel.app']
+  : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175']
+
 app.use(cors({
-  origin: '*',
-  credentials: false,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
