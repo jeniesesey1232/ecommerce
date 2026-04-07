@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-white: #FFFFFF;
+  --color-black: #111111;
+  --color-dark-gray: #333333;
+  --color-light-gray: #F5F5F5;
+  --color-border-gray: #E5E5E5;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-white);
+  color: var(--color-black);
+}
+
+/* Global button styles */
+button, a[role="button"] {
+  transition: all 0.3s ease;
+}
+
+/* Primary buttons */
+.btn-primary {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+}
+
+/* Secondary buttons */
+.btn-secondary {
+  background-color: var(--color-light-gray);
+  color: var(--color-black);
+  border: 1px solid var(--color-border-gray);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-border-gray);
+}
+
+/* Text colors */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-black);
+}
+
+p, span, a {
+  color: var(--color-black);
+}
+
+/* Links */
+a {
+  color: var(--color-black);
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* White text on dark backgrounds */
+nav h1, nav h2, nav h3, nav h4, nav h5, nav h6,
+nav p, nav span, nav a,
+footer h1, footer h2, footer h3, footer h4, footer h5, footer h6,
+footer p, footer span, footer a {
+  color: var(--color-white);
+}
+
+/* Input styles */
+input, textarea, select {
+  border-color: var(--color-border-gray);
+  color: var(--color-black);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-black);
+  outline: none;
+}
+
+/* Card backgrounds */
+.card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-gray);
+}
+
+/* Section backgrounds */
+section {
+  background-color: var(--color-light-gray);
+}
+
+/* Custom animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.border-b-3 {
+  border-bottom-width: 3px;
+}
+
+/* Modal backdrop blur */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Modal slide-in animation */
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-content {
+  animation: modal-slide-in 0.3s ease-out;
+}
